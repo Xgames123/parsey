@@ -1,0 +1,10 @@
+[package]
+name = "parsey"
+version = "0.1.0"
+authors=["ldev <ldev@ldev.eu.org>"]
+edition="2024"
+description="A light weight parsing library for rust loosely based on nom"
+repository="https://github.com/Xgames123/parsey"
+
+[dependencies]
+miette={ version="7.6.0" }
