@@ -112,7 +112,7 @@ impl<'a> Parsey<'a> {
                 return None;
             }
             if until(char) {
-                return Some((char, self.take(i + 1)));
+                return Some((char, self.take(i)));
             }
         }
         None
@@ -281,14 +281,28 @@ mod test {
     fn take_until() {
         let mut ci = Parsey::new("abcd");
         assert_eq!(
-            ci.take_until(|c| c == 'c'),
-            Some((
-                'c',
-                Parsey {
-                    code: "abcd",
-                    span: (0..2).into()
-                }
-            ))
+            ci.take_until(|c| c == 'c').map(|p| (p.0, p.1.str())),
+            Some(('c', "ab"))
+        );
+
+        assert_eq!(ci.str(), "cd");
+
+        assert_eq!(
+            ci,
+            Parsey {
+                code: "abcd",
+                span: (2..4).into(),
+            }
+        );
+    }
+
+    #[test]
+    fn take_until_without() {
+        let mut ci = Parsey::new("abcd");
+        assert_eq!(
+            ci.take_until_without(|c| c == 'c', |_| false)
+                .map(|p| (p.0, p.1.str())),
+            Some(('c', "ab"))
         );
 
         assert_eq!(ci.str(), "cd");
