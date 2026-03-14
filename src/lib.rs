@@ -128,6 +128,15 @@ impl<'a> Parsey<'a> {
             .unwrap_or_else(|| ('\0', self.take(self.str().len())))
     }
 
+    pub fn take_until_tag(&mut self, tag: &str) -> Option<Self> {
+        for i in 0..self.str().len() {
+            if (self.str()[i..]).starts_with(tag) {
+                return Some(self.take(i));
+            }
+        }
+        None
+    }
+
     pub fn take_until_tag_inclusive(&mut self, tag: &str) -> Option<Self> {
         for i in 0..self.str().len() {
             if (self.str()[i..]).starts_with(tag) {
