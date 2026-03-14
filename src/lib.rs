@@ -100,6 +100,24 @@ impl<'a> Parsey<'a> {
         None
     }
 
+    // Takes until the until function returns true.
+    // When the without function returns true the operation is aborted, None is returned and nothing is consumed.
+    pub fn take_until_without(
+        &mut self,
+        until: impl Fn(char) -> bool,
+        without: impl Fn(char) -> bool,
+    ) -> Option<(char, Self)> {
+        for (i, char) in self.str().char_indices() {
+            if without(char) {
+                return None;
+            }
+            if until(char) {
+                return Some((char, self.take(i + 1)));
+            }
+        }
+        None
+    }
+
     pub fn take_until_or_end(&mut self, f: impl Fn(char) -> bool) -> (char, Self) {
         self.take_until(f)
             .unwrap_or_else(|| ('\0', self.take(self.str().len())))
@@ -119,7 +137,12 @@ impl<'a> Parsey<'a> {
         None
     }
 
+    #[doc(alias = "fork")]
     pub fn duplicate(&self) -> Self {
+        self.fork()
+    }
+
+    pub fn fork(&self) -> Self {
         self.clone()
     }
 
@@ -129,7 +152,7 @@ impl<'a> Parsey<'a> {
         &mut self,
         f: impl FnOnce(&mut Parsey<'a>) -> Result<Option<O>, E>,
     ) -> Result<Option<O>, E> {
-        let mut duplicated = self.duplicate();
+        let mut duplicated = self.fork();
         let result = f(&mut duplicated)?;
         if let Some(r) = result {
             *self = duplicated;
