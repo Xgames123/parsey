@@ -122,7 +122,7 @@ macro_rules! impl_parse_any {
             let ($($f),*) = self;
 
         $(
-                if let Some(value) = parser.sandbox_result($f)? {
+                if let Some(value) = $f(parser)? {
                     return Ok(Some(value));
                 }
         )*
