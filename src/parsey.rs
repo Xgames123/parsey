@@ -291,6 +291,19 @@ mod test {
                 span: (2..4).into(),
             }
         );
+
+        let mut ci = Parsey::new("hello world");
+        assert_eq!(
+            ci.take_until_without("world", '\n').map(|p| p.str()),
+            Some("hello ")
+        );
+
+        assert_eq!(ci.str(), "world");
+
+        let mut ci = Parsey::new("hello\nworld");
+        assert_eq!(ci.take_until_without("world", '\n').map(|p| p.str()), None);
+
+        assert_eq!(ci.str(), "hello\nworld");
     }
 
     #[test]
