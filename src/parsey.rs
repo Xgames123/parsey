@@ -188,6 +188,13 @@ mod test {
     }
 
     #[test]
+    fn take() {
+        let mut parser = Parsey::new("**lala");
+        assert_eq!(parser.take("**").map(|v| v.str()), Some("**"));
+        assert_eq!(parser.str(), "lala");
+    }
+
+    #[test]
     fn take_until() {
         let mut ci = Parsey::new("abcd");
         assert_eq!(ci.take_until(|c| c == 'c').map(|p| p.str()), Some("ab"));
