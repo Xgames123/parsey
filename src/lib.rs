@@ -1,191 +1,47 @@
-use std::{convert::Infallible, ops::Range};
-
-use miette::SourceSpan;
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Span(Range<usize>);
-impl Span {
-    pub fn from_str(str: &str) -> Self {
-        Self(0..str.len())
-    }
-
-    pub fn start(&self) -> usize {
-        self.0.start
-    }
-    pub fn end(&self) -> usize {
-        self.0.end
-    }
-    pub fn len(&self) -> usize {
-        self.0.end - self.0.start
-    }
-
-    pub fn split(&mut self, index: usize) -> (Self, Self) {
-        let index = self.0.start + index;
-        ((self.0.start..index).into(), (index..self.0.end).into())
-    }
-}
-
-impl From<Range<usize>> for Span {
-    fn from(value: Range<usize>) -> Self {
-        Self(value)
-    }
-}
-
-impl Into<SourceSpan> for Span {
-    fn into(self) -> SourceSpan {
-        (self.start(), self.len()).into()
-    }
-}
-impl Into<Range<usize>> for Span {
-    fn into(self) -> Range<usize> {
-        self.0
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Parsey<'a> {
-    code: &'a str,
-    span: Span,
-}
-impl<'a> Parsey<'a> {
-    pub fn new(code: &'a str) -> Self {
-        Self {
-            code,
-            span: Span::from_str(code),
-        }
-    }
-
-    pub fn str(&self) -> &'a str {
-        &self.code[self.span.0.start..self.span.0.end]
-    }
-    pub fn span(&self) -> Span {
-        self.span.clone()
-    }
-
-    pub fn take(&mut self, size: usize) -> Self {
-        let (left, right) = self.span.split(size);
-        self.span = right;
-        Self {
-            code: self.code,
-            span: left,
-        }
-    }
-    pub fn peek_char(&mut self) -> Option<char> {
-        self.str().chars().next()
-    }
-
-    pub fn tag(&mut self, tag: &str) -> Option<Self> {
-        if self.str().starts_with(tag) {
-            Some(self.take(tag.len()))
-        } else {
-            None
-        }
-    }
-
-    pub fn take_until(&mut self, f: impl Fn(char) -> bool) -> Option<(char, Self)> {
-        for (i, char) in self.str().char_indices() {
-            if f(char) {
-                return Some((char, self.take(i)));
-            }
-        }
-        None
-    }
-
-    pub fn take_until_inclusive(&mut self, f: impl Fn(char) -> bool) -> Option<(char, Self)> {
-        for (i, char) in self.str().char_indices() {
-            if f(char) {
-                return Some((char, self.take(i + 1)));
-            }
-        }
-        None
-    }
-
-    // Takes until the until function returns true.
-    // When the without function returns true the operation is aborted, None is returned and nothing is consumed.
-    pub fn take_until_without(
-        &mut self,
-        until: impl Fn(char) -> bool,
-        without: impl Fn(char) -> bool,
-    ) -> Option<(char, Self)> {
-        for (i, char) in self.str().char_indices() {
-            if without(char) {
-                return None;
-            }
-            if until(char) {
-                return Some((char, self.take(i)));
-            }
-        }
-        None
-    }
-
-    pub fn take_until_or_end(&mut self, f: impl Fn(char) -> bool) -> (char, Self) {
-        self.take_until(f)
-            .unwrap_or_else(|| ('\0', self.take(self.str().len())))
-    }
-
-    pub fn take_until_or_end_inclusive(&mut self, f: impl Fn(char) -> bool) -> (char, Self) {
-        self.take_until_inclusive(f)
-            .unwrap_or_else(|| ('\0', self.take(self.str().len())))
-    }
-
-    pub fn take_until_tag(&mut self, tag: &str) -> Option<Self> {
-        for i in 0..self.str().len() {
-            if (self.str()[i..]).starts_with(tag) {
-                return Some(self.take(i));
-            }
-        }
-        None
-    }
-
-    pub fn take_until_tag_inclusive(&mut self, tag: &str) -> Option<Self> {
-        for i in 0..self.str().len() {
-            if (self.str()[i..]).starts_with(tag) {
-                return Some(self.take(i + tag.len()));
-            }
-        }
-        None
-    }
-
-    #[doc(alias = "fork")]
-    pub fn duplicate(&self) -> Self {
-        self.fork()
-    }
-
-    pub fn fork(&self) -> Self {
-        self.clone()
-    }
-
-    ///Tries a function. If it returns Some apply the result to self else throw away all work the
-    ///function has done. (Forwards inner error)
-    pub fn sandbox_result<O, E>(
-        &mut self,
-        f: impl FnOnce(&mut Parsey<'a>) -> Result<Option<O>, E>,
-    ) -> Result<Option<O>, E> {
-        let mut duplicated = self.fork();
-        let result = f(&mut duplicated)?;
-        if let Some(r) = result {
-            *self = duplicated;
-            Ok(Some(r))
-        } else {
-            Ok(None)
-        }
-    }
-    ///Tries a function. If it returns Some apply the result to self else throw away all work the
-    ///function has done.
-    pub fn sandbox<O>(&mut self, f: impl FnOnce(&mut Parsey<'a>) -> Option<O>) -> Option<O> {
-        self.sandbox_result::<O, Infallible>(|p| Ok(f(p))).unwrap()
-    }
-
-    pub fn end(&self) -> bool {
-        self.str().len() == 0
-    }
-}
+mod parsey;
+mod span;
+pub use parsey::*;
+pub use span::*;
 
 pub trait ParseAnyResult<'c, O, E> {
     fn parse_any_result(self, parser: &mut Parsey<'c>) -> Result<Option<O>, E>;
 }
 pub trait ParseAny<'c, O> {
     fn parse_any(self, parser: &mut Parsey<'c>) -> Option<O>;
+}
+
+pub trait Searcher {
+    /// The length of which should be skipped when consuming this searcher.
+    /// The length will be ceiled to to first char boundery
+    fn len(&self) -> usize {
+        1
+    }
+
+    // Does the searcher match at the start of the string
+    fn matches_start(&self, str: &str) -> bool;
+}
+
+impl<F: Fn(char) -> bool> Searcher for F {
+    fn matches_start(&self, str: &str) -> bool {
+        let Some(char) = str.chars().next() else {
+            return false;
+        };
+        self(char)
+    }
+}
+
+impl<'a> Searcher for &'a str {
+    fn len(&self) -> usize {
+        str::len(&self)
+    }
+    fn matches_start(&self, str: &str) -> bool {
+        str.starts_with(self)
+    }
+}
+impl Searcher for char {
+    fn matches_start(&self, str: &str) -> bool {
+        str.chars().next() == Some(*self)
+    }
 }
 
 macro_rules! impl_parse_any {
@@ -247,129 +103,3 @@ impl_parse_any!(F);
 impl_parse_any!(F0, F1);
 impl_parse_any!(F0, F1, F2);
 impl_parse_any!(F0, F1, F2, F3);
-
-#[cfg(test)]
-mod test {
-    use crate::Parsey;
-
-    #[test]
-    fn split() {
-        let mut ci = Parsey::new("abcd");
-        assert_eq!(
-            ci.take(1),
-            Parsey {
-                code: "abcd",
-                span: (0..1).into()
-            }
-        );
-        assert_eq!(
-            ci,
-            Parsey {
-                code: "abcd",
-                span: (1..4).into()
-            }
-        );
-
-        assert_eq!(
-            ci.take(1),
-            Parsey {
-                code: "abcd",
-                span: (1..2).into()
-            }
-        );
-        assert_eq!(
-            ci,
-            Parsey {
-                code: "abcd",
-                span: (2..4).into()
-            }
-        );
-    }
-
-    #[test]
-    fn take_until() {
-        let mut ci = Parsey::new("abcd");
-        assert_eq!(
-            ci.take_until(|c| c == 'c').map(|p| (p.0, p.1.str())),
-            Some(('c', "ab"))
-        );
-
-        assert_eq!(ci.str(), "cd");
-
-        assert_eq!(
-            ci,
-            Parsey {
-                code: "abcd",
-                span: (2..4).into(),
-            }
-        );
-    }
-
-    #[test]
-    fn take_until_without() {
-        let mut ci = Parsey::new("abcd");
-        assert_eq!(
-            ci.take_until_without(|c| c == 'c', |_| false)
-                .map(|p| (p.0, p.1.str())),
-            Some(('c', "ab"))
-        );
-
-        assert_eq!(ci.str(), "cd");
-
-        assert_eq!(
-            ci,
-            Parsey {
-                code: "abcd",
-                span: (2..4).into(),
-            }
-        );
-    }
-
-    #[test]
-    fn take_until_newline() {
-        let mut ci = Parsey::new("abcd\n");
-        assert_eq!(
-            ci.take_until_or_end(|c| c == '\n'),
-            (
-                '\n',
-                Parsey {
-                    code: "abcd\n",
-                    span: (0..4).into()
-                }
-            )
-        );
-
-        assert_eq!(
-            ci,
-            Parsey {
-                code: "abcd\n",
-                span: (4..5).into(),
-            }
-        );
-
-        assert_eq!(ci.str(), "\n");
-    }
-
-    #[test]
-    fn skip_whitespace() {
-        let mut ci = Parsey::new(" \nabcd");
-        ci.take_until_or_end(|c| !c.is_whitespace());
-        assert_eq!(ci.str(), "abcd");
-
-        let mut ci = Parsey::new("\n\n");
-        ci.take_until_or_end(|c| !c.is_whitespace());
-        assert_eq!(ci.str(), "");
-    }
-
-    #[test]
-    fn end() {
-        let mut ci = Parsey::new("a\nb\nc\n");
-        ci.take_until_or_end(|c| c == '\n');
-        ci.take(1);
-        ci.take_until_or_end(|c| c == '\n');
-        ci.take(1);
-        ci.take_until_or_end(|c| c == '\n');
-        ci.take(1);
-        assert!(ci.end());
-    }
-}

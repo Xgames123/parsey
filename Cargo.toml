@@ -7,4 +7,7 @@ description="A light weight parsing library for rust loosely based on nom"
 repository="https://github.com/Xgames123/parsey"
 
 [dependencies]
-miette={ version="7.6.0" }
+miette={ version="7.6.0", optional=true }
+
+[features]
+miette=["dep:miette"]
