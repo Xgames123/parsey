@@ -3,13 +3,10 @@ mod span;
 pub use parsey::*;
 pub use span::*;
 
-pub trait ParseAnyResult<'c, O, E> {
-    fn parse_any_result(self, parser: &mut Parsey<'c>) -> Result<Option<O>, E>;
-    fn parse_any_result_sandboxed(self, parser: &mut Parsey<'c>) -> Result<Option<O>, E>;
-}
-pub trait ParseAny<'c, O> {
-    fn parse_any(self, parser: &mut Parsey<'c>) -> Option<O>;
-    fn parse_any_sandboxed(self, parser: &mut Parsey<'c>) -> Option<O>;
+pub type ParseResult<T, E> = Result<Option<T>, E>;
+
+pub trait Parse<E>: Sized {
+    fn parse(parser: &mut Parsey) -> ParseResult<Self, E>;
 }
 
 pub trait Searcher {
@@ -46,93 +43,21 @@ impl Searcher for char {
     }
 }
 
-macro_rules! impl_parse_any {
-    ($($f:ident),*) => {
-
-        #[allow(unused_parens)]
-        impl<
-            'c,
-            O,
-        $(
-            $f: FnOnce(&mut Parsey<'c>) -> Option<O>
-        ),*
-        > ParseAny<'c, O> for ($($f),*)
+#[macro_export]
+macro_rules! parse_any {
+    ($parsey:expr$(=>$type:ty)?, $($parser:expr),*) => {
         {
-
-            /// Try the functions in order and return the result of the first one that returns
-            /// Some. (Errors are forwarded)
-            /// Parsers are sandboxed and thus only applied when they are Some()
-            #[allow(nonstandard_style)]
-            fn parse_any_sandboxed(self, parser: &mut Parsey<'c>) -> Option<O> {
-            let ($($f),*) = self;
-
-        $(
-                if let Some(value) = parser.sandbox($f) {
-                    return Some(value);
-                }
-        )*
-                None
+            let result$(: $type)? = if false {
+                unreachable!();
             }
-
-            /// Try the functions in order and return the result of the first one that returns
-            /// Some. (Errors are forwarded)
-            #[allow(nonstandard_style)]
-            fn parse_any(self, parser: &mut Parsey<'c>) -> Option<O> {
-            let ($($f),*) = self;
-
-        $(
-                if let Some(value) = $f(parser) {
-                    return Some(value);
-                }
-        )*
-                None
-            }
+            $( else if let result = $parser($parsey) && result != Ok(None) {
+                result.map_err(|e|e.into()).map(|v|v.map(|v|v.into()))
+            } )*
+            else {
+                Ok(None)
+            };
+            result
         }
 
-        #[allow(unused_parens)]
-        impl<
-            'c,
-            O,
-            E,
-        $(
-            $f: FnOnce(&mut Parsey<'c>) -> Result<Option<O>, E>
-        ),*
-        > ParseAnyResult<'c, O, E> for ($($f),*)
-        {
-
-            /// Try the functions in order and return the result of the first one that returns
-            /// Some. (Errors are forwarded)
-            /// Parsers are sandboxed and thus only applied when they are Ok(Some())
-            #[allow(nonstandard_style)]
-            fn parse_any_result_sandboxed(self, parser: &mut Parsey<'c>) -> Result<Option<O>, E> {
-            let ($($f),*) = self;
-
-        $(
-                if let Some(value) = parser.sandbox_result($f)? {
-                    return Ok(Some(value));
-                }
-        )*
-                Ok(None)
-            }
-
-            /// Try the functions in order and return the result of the first one that returns
-            /// Some. (Errors are forwarded)
-            #[allow(nonstandard_style)]
-            fn parse_any_result(self, parser: &mut Parsey<'c>) -> Result<Option<O>, E> {
-            let ($($f),*) = self;
-
-        $(
-                if let Some(value) = $f(parser)? {
-                    return Ok(Some(value));
-                }
-        )*
-                Ok(None)
-            }
-        }
     };
 }
-
-impl_parse_any!(F);
-impl_parse_any!(F0, F1);
-impl_parse_any!(F0, F1, F2);
-impl_parse_any!(F0, F1, F2, F3);
