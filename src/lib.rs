@@ -1,7 +1,10 @@
 mod parsey;
 mod span;
+mod spanned;
+
 pub use parsey::*;
 pub use span::*;
+pub use spanned::*;
 
 pub type ParseResult<T, E> = Result<Option<T>, E>;
 
