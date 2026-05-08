@@ -20,11 +20,11 @@ pub trait Searcher {
     }
 
     // Does the searcher match at the start of the string
-    fn matches_start(&self, str: &str) -> bool;
+    fn matches_start(&mut self, str: &str) -> bool;
 }
 
-impl<F: Fn(char) -> bool> Searcher for F {
-    fn matches_start(&self, str: &str) -> bool {
+impl<F: FnMut(char) -> bool> Searcher for F {
+    fn matches_start(&mut self, str: &str) -> bool {
         let Some(char) = str.chars().next() else {
             return false;
         };
@@ -36,12 +36,12 @@ impl<'a> Searcher for &'a str {
     fn len(&self) -> usize {
         str::len(&self)
     }
-    fn matches_start(&self, str: &str) -> bool {
-        str.starts_with(self)
+    fn matches_start(&mut self, str: &str) -> bool {
+        str.starts_with(*self)
     }
 }
 impl Searcher for char {
-    fn matches_start(&self, str: &str) -> bool {
+    fn matches_start(&mut self, str: &str) -> bool {
         str.chars().next() == Some(*self)
     }
 }
