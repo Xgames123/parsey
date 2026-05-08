@@ -36,7 +36,7 @@ impl<'a> Parsey<'a> {
         }
     }
 
-    pub fn take(&mut self, searcher: impl Searcher) -> Option<Self> {
+    pub fn take(&mut self, mut searcher: impl Searcher) -> Option<Self> {
         if searcher.matches_start(self.str()) {
             Some(self.take_n(searcher.len()))
         } else {
@@ -44,7 +44,7 @@ impl<'a> Parsey<'a> {
         }
     }
 
-    pub fn take_until(&mut self, searcher: impl Searcher) -> Option<Self> {
+    pub fn take_until(&mut self, mut searcher: impl Searcher) -> Option<Self> {
         for (i, _) in self.str().char_indices() {
             if searcher.matches_start(&self.str()[i..]) {
                 return Some(self.take_n(i));
@@ -53,7 +53,7 @@ impl<'a> Parsey<'a> {
         None
     }
 
-    pub fn take_until_inclusive(&mut self, searcher: impl Searcher) -> Option<Self> {
+    pub fn take_until_inclusive(&mut self, mut searcher: impl Searcher) -> Option<Self> {
         for (i, _) in self.str().char_indices() {
             if searcher.matches_start(&self.str()[i..]) {
                 return Some(self.take_n(i + searcher.len()));
@@ -66,8 +66,8 @@ impl<'a> Parsey<'a> {
     // When the without function returns true the operation is aborted, None is returned and nothing is consumed.
     pub fn take_until_without(
         &mut self,
-        until: impl Searcher,
-        without: impl Searcher,
+        mut until: impl Searcher,
+        mut without: impl Searcher,
     ) -> Option<Self> {
         for (i, _) in self.str().char_indices() {
             let str = &self.str()[i..];
@@ -83,8 +83,8 @@ impl<'a> Parsey<'a> {
 
     pub fn take_until_without_inclusive(
         &mut self,
-        until: impl Searcher,
-        without: impl Searcher,
+        mut until: impl Searcher,
+        mut without: impl Searcher,
     ) -> Option<Self> {
         for (i, _) in self.str().char_indices() {
             let str = &self.str()[i..];
