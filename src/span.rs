@@ -1,31 +1,40 @@
 use std::ops::Range;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Span(Range<usize>);
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Span {
+    start: usize,
+    end: usize,
+}
 impl Span {
     pub fn from_str(str: &str) -> Self {
-        Self(0..str.len())
+        Self {
+            start: 0,
+            end: str.len(),
+        }
     }
 
     pub fn start(&self) -> usize {
-        self.0.start
+        self.start
     }
     pub fn end(&self) -> usize {
-        self.0.end
+        self.end
     }
     pub fn len(&self) -> usize {
-        self.0.end - self.0.start
+        self.end - self.start
     }
 
     pub fn split(&mut self, index: usize) -> (Self, Self) {
-        let index = self.0.start + index;
-        ((self.0.start..index).into(), (index..self.0.end).into())
+        let index = self.start + index;
+        ((self.start..index).into(), (index..self.end).into())
     }
 }
 
 impl From<Range<usize>> for Span {
     fn from(value: Range<usize>) -> Self {
-        Self(value)
+        Self {
+            start: value.start,
+            end: value.end,
+        }
     }
 }
 
@@ -37,6 +46,6 @@ impl Into<miette::SourceSpan> for Span {
 }
 impl Into<Range<usize>> for Span {
     fn into(self) -> Range<usize> {
-        self.0
+        self.start..self.end
     }
 }
