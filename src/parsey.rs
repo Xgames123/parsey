@@ -2,6 +2,7 @@ use std::convert::Infallible;
 
 use crate::{Searcher, Span};
 
+/// A Parser that consumes a str and can do operations on it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Parsey<'a> {
     code: &'a str,
@@ -15,6 +16,7 @@ impl<'a> Parsey<'a> {
         }
     }
 
+    /// Returns the string slice this parser can see.
     pub fn str(&self) -> &'a str {
         &self.code[self.span.start()..self.span.end()]
     }
@@ -22,12 +24,14 @@ impl<'a> Parsey<'a> {
         self.span.clone()
     }
 
+    /// Returns the first character of the string slice of the parser. or None if the slice has length 0
     pub fn peek_char(&mut self) -> Option<char> {
         self.str().chars().next()
     }
 
-    pub fn take_n(&mut self, size: usize) -> Self {
-        let size = self.str().ceil_char_boundary(size);
+    /// Splits the first n **bytes** into a new parser and return it.
+    pub fn take_n(&mut self, n: usize) -> Self {
+        let size = self.str().ceil_char_boundary(n);
         let (left, right) = self.span.split(size);
         self.span = right;
         Self {
@@ -36,6 +40,14 @@ impl<'a> Parsey<'a> {
         }
     }
 
+    /// Takes one time the matched searcher and returns it or None if the searcher didn't match.
+    ///
+    /// ```rust
+    /// use parsey::Parsey;
+    ///
+    /// let mut parsey = Parsey::new("11123456");
+    /// assert_eq!(parsey.take('1').unwrap().str(), "1")
+    /// ```
     pub fn take(&mut self, mut searcher: impl Searcher) -> Option<Self> {
         if searcher.matches_start(self.str()) {
             Some(self.take_n(searcher.len()))
@@ -44,6 +56,14 @@ impl<'a> Parsey<'a> {
         }
     }
 
+    /// Take until the searcher matches.
+    ///
+    /// ```rust
+    /// use parsey::Parsey;
+    ///
+    /// let mut parsey = Parsey::new("123456");
+    /// assert_eq!(parsey.take_until('3').unwrap().str(), "12")
+    /// ```
     pub fn take_until(&mut self, mut searcher: impl Searcher) -> Option<Self> {
         for (i, _) in self.str().char_indices() {
             if searcher.matches_start(&self.str()[i..]) {
@@ -53,6 +73,14 @@ impl<'a> Parsey<'a> {
         None
     }
 
+    /// Take until the searcher matches with the matched part included.
+    ///
+    /// ```rust
+    /// use parsey::Parsey;
+    ///
+    /// let mut parsey = Parsey::new("123456");
+    /// assert_eq!(parsey.take_until_inclusive('3').unwrap().str(), "123")
+    /// ```
     pub fn take_until_inclusive(&mut self, mut searcher: impl Searcher) -> Option<Self> {
         for (i, _) in self.str().char_indices() {
             if searcher.matches_start(&self.str()[i..]) {
@@ -62,8 +90,8 @@ impl<'a> Parsey<'a> {
         None
     }
 
-    // Takes until the until function returns true.
-    // When the without function returns true the operation is aborted, None is returned and nothing is consumed.
+    // Takes until the until searcher matches.
+    // If meanwhile the without searchers matches. The operation is aborted and nothing will be consumed and None will be returned.
     pub fn take_until_without(
         &mut self,
         mut until: impl Searcher,
