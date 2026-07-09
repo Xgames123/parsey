@@ -27,3 +27,9 @@ impl<T> Deref for Spanned<T> {
         &self.inner
     }
 }
+
+impl<T> From<T> for Spanned<T> {
+    fn from(value: T) -> Self {
+        Self::null_span(value)
+    }
+}
