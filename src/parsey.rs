@@ -20,6 +20,7 @@ impl<'a> Parsey<'a> {
     pub fn str(&self) -> &'a str {
         &self.code[self.span.start()..self.span.end()]
     }
+    /// Returns the span of the string slice this parses can see.
     pub fn span(&self) -> Span {
         self.span.clone()
     }
@@ -29,7 +30,7 @@ impl<'a> Parsey<'a> {
         self.str().chars().next()
     }
 
-    /// Splits the first n **bytes** into a new parser and return it.
+    /// Takes the first n **bytes** and splits it into a new parser and returns it.
     pub fn take_n(&mut self, n: usize) -> Self {
         let size = self.str().ceil_char_boundary(n);
         let (left, right) = self.span.split(size);
@@ -40,7 +41,7 @@ impl<'a> Parsey<'a> {
         }
     }
 
-    /// Takes one time the matched searcher and returns it or None if the searcher didn't match.
+    /// Takes one time the matched [`Searcher`] and returns it or None if the searcher didn't match.
     ///
     /// ```rust
     /// use parsey::Parsey;

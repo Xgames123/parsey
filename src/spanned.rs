@@ -2,15 +2,17 @@ use std::ops::Deref;
 
 use crate::Span;
 
+/// Wraps a type with a [`Span`]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Spanned<T> {
     pub span: Span,
     pub inner: T,
 }
 impl<T> Spanned<T> {
+    /// Creates a instance with a null span (a span ranging from 0 to 0)
     pub fn null_span(inner: T) -> Self {
         Self {
-            span: (0..0).into(),
+            span: Span::NULL,
             inner,
         }
     }

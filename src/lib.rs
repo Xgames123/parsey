@@ -1,64 +1,33 @@
 mod parsey;
+mod searcher;
 mod span;
 mod spanned;
 
-pub use parsey::*;
-pub use span::*;
-pub use spanned::*;
+pub use {parsey::*, searcher::*, span::*, spanned::*};
 
+/// The result of a parse operation.
+/// - `Ok(None)`: The provided input is not of the right type.
+/// - `Err()`: The provided input is of the right type but it could not be parsed.
+/// - `Ok(Some())`: The parse operation has succeeded.
+///
+/// # Example
+/// a parse_number function should return:
+/// - `Err`: On an input like this: '10a5'
+/// - `Ok(Some(Number))`: On an input like '393.5'
+/// - `Ok(None)`: On an input like 'variable'
 pub type ParseResult<T, E> = Result<Option<T>, E>;
-
-pub trait Parse<E>: Sized {
-    fn parse(parser: &mut Parsey) -> ParseResult<Self, E>;
-}
-
-/// A trait that represent a type that can be used to search a string for a match.
-/// This trait is implemented for types like:
-/// - char
-/// - str
-/// - FnMut(char) -> bool,
-pub trait Searcher {
-    /// The length of which should be skipped when consuming this searcher.
-    /// The length will be ceiled to to first char boundery
-    fn len(&self) -> usize {
-        1
-    }
-
-    // Does the searcher match at the start of the string
-    fn matches_start(&mut self, str: &str) -> bool;
-}
-
-impl<F: FnMut(char) -> bool> Searcher for F {
-    fn matches_start(&mut self, str: &str) -> bool {
-        let Some(char) = str.chars().next() else {
-            return false;
-        };
-        self(char)
-    }
-}
-
-impl<'a> Searcher for &'a str {
-    fn len(&self) -> usize {
-        str::len(&self)
-    }
-    fn matches_start(&mut self, str: &str) -> bool {
-        str.starts_with(*self)
-    }
-}
-impl Searcher for char {
-    fn matches_start(&mut self, str: &str) -> bool {
-        str.chars().next() == Some(*self)
-    }
-}
 
 /// Tries parsers in order until one returns Ok(Some) or Err.
 ///
+/// Provided parse functions can return can return a [`ParseResult`] with a
+/// type and error that can be converted to the output type.
+///
 ///```rust
-/// use parsey::Parsey;
+/// use parsey::{Parsey, ParseResult};
 ///
 /// #[derive(Debug, PartialEq)]
 /// enum Token {Number, String}
-/// fn parse_number<'c>(parser: &mut Parsey<'c>) -> Result<Option<Token>, ()> {
+/// fn parse_number<'c>(parser: &mut Parsey<'c>) -> ParseResult<Token, ()> {
 ///     let num = parser.take_until_or_end(|c: char|!c.is_digit(10));
 ///         dbg!(num.str());
 ///     if num.str().len() > 0 {
@@ -68,7 +37,7 @@ impl Searcher for char {
 ///     }
 /// }
 ///
-///fn parse_string<'c>(parser: &mut Parsey<'c>) -> Result<Option<Token>, ()> {
+///fn parse_string<'c>(parser: &mut Parsey<'c>) -> ParseResult<Token, ()> {
 ///     let stri = parser.take_until_or_end(|c: char|!c.is_alphabetic());
 ///         dbg!(stri.str());
 ///     if stri.str().len() > 0 {
@@ -79,7 +48,7 @@ impl Searcher for char {
 ///}
 ///
 ///let mut parser = Parsey::new("123,abc");
-///let result: Result<Option<Token>, ()> = parsey::parse_any!(&mut parser, parse_number, parse_string);
+///let result: ParseResult<Token, ()> = parsey::parse_any!(&mut parser, parse_number, parse_string);
 ///assert_eq!(result.unwrap().unwrap(), Token::Number);
 ///```
 #[macro_export]

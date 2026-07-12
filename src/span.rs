@@ -6,6 +6,9 @@ pub struct Span {
     end: usize,
 }
 impl Span {
+    /// A span ranging from 0 to 0
+    pub const NULL: Span = Span { start: 0, end: 0 };
+
     pub fn from_str(str: &str) -> Self {
         Self {
             start: 0,
@@ -23,7 +26,7 @@ impl Span {
         self.end - self.start
     }
 
-    pub fn split(&mut self, index: usize) -> (Self, Self) {
+    pub fn split(self, index: usize) -> (Self, Self) {
         let index = self.start + index;
         ((self.start..index).into(), (index..self.end).into())
     }
