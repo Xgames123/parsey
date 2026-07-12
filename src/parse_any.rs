@@ -4,11 +4,11 @@
 /// type and error that can be converted to the output type.
 ///
 ///```rust
-/// use parsey::{Parsey, ParseResult};
+/// use starryparse::{Parser, ParseResult, parse_any};
 ///
 /// #[derive(Debug, PartialEq)]
 /// enum Token {Number, String}
-/// fn parse_number<'c>(parser: &mut Parsey<'c>) -> ParseResult<Token, ()> {
+/// fn parse_number<'c>(parser: &mut Parser<'c>) -> ParseResult<Token, ()> {
 ///     let num = parser.take_until_or_end(|c: char|!c.is_digit(10));
 ///     if num.str().len() > 0 {
 ///         Ok(Some(Token::Number))
@@ -17,7 +17,7 @@
 ///     }
 /// }
 ///
-///fn parse_string<'c>(parser: &mut Parsey<'c>) -> ParseResult<Token, ()> {
+///fn parse_string<'c>(parser: &mut Parser<'c>) -> ParseResult<Token, ()> {
 ///     let stri = parser.take_until_or_end(|c: char|!c.is_alphabetic());
 ///     if stri.str().len() > 0 {
 ///         Ok(Some(Token::String))
@@ -26,18 +26,18 @@
 ///     }
 ///}
 ///
-///let mut parser = Parsey::new("123,abc");
-///let result: ParseResult<Token, ()> = parsey::parse_any!(&mut parser, parse_number, parse_string);
+///let mut parser = Parser::new("123,abc");
+///let result: ParseResult<Token, ()> = parse_any!(&mut parser, parse_number, parse_string);
 ///assert_eq!(result.unwrap().unwrap(), Token::Number);
 ///```
 #[macro_export]
 macro_rules! parse_any {
-    ($parsey:expr$(=>$type:ty)?, $($parser:expr),*) => {
+    ($parser:expr$(=>$type:ty)?, $($parse_func:expr),*) => {
         {
             let result$(: $type)? = if false {
                 unreachable!();
             }
-            $( else if let result = $parser($parsey) && let Ok(Some(_)) | Err(_) = result {
+            $( else if let result = $parser($parser) && let Ok(Some(_)) | Err(_) = result {
                 result.map_err(|e|e.into()).map(|v|v.map(|v|v.into()))
             } )*
             else {

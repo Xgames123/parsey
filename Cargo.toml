@@ -1,10 +1,10 @@
 [package]
-name = "parsey"
+name = "starryparse"
 version = "1.0.0"
-authors=["ldev <ldev@ldev.eu.org>"]
+authors=["Sibe <sibe at starssystems dot org>"]
 edition="2024"
 description="A light weight zero copy parsing library for rust focused on text parsing and span recovery."
-repository="https://github.com/Xgames123/parsey"
+repository="https://github.com/Xgames123/starryparse"
 keywords=["parse", "zero-copy", "text", "span"]
 categories=["parsing"]
 license="Apache-2.0"

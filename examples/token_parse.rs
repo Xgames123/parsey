@@ -1,4 +1,4 @@
-use parsey::{ParseResult, Parsey, Spanned, parse_any};
+use starryparse::{ParseResult, Parser, Spanned, parse_any};
 
 #[derive(Debug, PartialEq)]
 enum Err {
@@ -26,7 +26,7 @@ impl From<String> for Token {
     }
 }
 
-fn parse_string<'c>(parser: &mut Parsey<'c>) -> ParseResult<String, Spanned<Err>> {
+fn parse_string<'c>(parser: &mut Parser<'c>) -> ParseResult<String, Spanned<Err>> {
     if let None = parser.take('"') {
         return Ok(None); // If the first char is not a " we don't consider this a string
     }
@@ -34,9 +34,6 @@ fn parse_string<'c>(parser: &mut Parsey<'c>) -> ParseResult<String, Spanned<Err>
     let string = parser.take_until('"').ok_or_else(|| {
         // Approximate where the string should end to get better quality spans.
         let aproximated_string = parser.take_until_or_end(['\n', ',', ')']);
-        // In this case we pass the entire span for the error.
-        // You can do more processing to guess what the user meant for better span and error
-        // quality.
         Spanned::new(Err::StringHasNoEnd, aproximated_string.span())
     })?;
 
@@ -47,7 +44,7 @@ fn is_valid_ident_char(char: char) -> bool {
     char.is_ascii_alphanumeric() || ['_', '-'].contains(&char)
 }
 
-fn parse_var<'c>(parser: &mut Parsey<'c>) -> ParseResult<VarRef, Spanned<Err>> {
+fn parse_var<'c>(parser: &mut Parser<'c>) -> ParseResult<VarRef, Spanned<Err>> {
     // If the first char is not a valid ident char this is not an identifier.
     if let None = parser.fork().take(is_valid_ident_char) {
         return Ok(None);
@@ -59,20 +56,20 @@ fn parse_var<'c>(parser: &mut Parsey<'c>) -> ParseResult<VarRef, Spanned<Err>> {
     }))
 }
 
-fn parse_token<'c>(parser: &mut Parsey<'c>) -> ParseResult<Token, Spanned<Err>> {
+fn parse_token<'c>(parser: &mut Parser<'c>) -> ParseResult<Token, Spanned<Err>> {
     parse_any!(parser, parse_string, parse_var)
 }
 
 fn main() {
     assert_eq!(
-        parse_token(&mut Parsey::new("my_var")).unwrap().unwrap(),
+        parse_token(&mut Parser::new("my_var")).unwrap().unwrap(),
         Token::VarRef(VarRef {
             var: "my_var".into()
         })
     );
 
     assert_eq!(
-        parse_token(&mut Parsey::new("\"my string\""))
+        parse_token(&mut Parser::new("\"my string\""))
             .unwrap()
             .unwrap(),
         Token::String("my string".into())

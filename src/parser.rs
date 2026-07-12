@@ -5,11 +5,11 @@ use crate::{Searcher, Span};
 /// Allows you to consumes a str in steps using basic operations. like take_n take_until
 /// 'c is the lifetime of the string slice this parser operates on.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Parsey<'c> {
+pub struct Parser<'c> {
     code: &'c str,
     span: Span,
 }
-impl<'c> Parsey<'c> {
+impl<'c> Parser<'c> {
     pub fn new(code: &'c str) -> Self {
         Self {
             code,
@@ -45,10 +45,10 @@ impl<'c> Parsey<'c> {
     /// If the provided searcher matches [`Searcher`] take it one time else return `None`.
     ///
     /// ```rust
-    /// use parsey::Parsey;
+    /// use starryparse::Parser;
     ///
-    /// let mut parsey = Parsey::new("11123456");
-    /// assert_eq!(parsey.take('1').unwrap().str(), "1")
+    /// let mut parser = Parser::new("11123456");
+    /// assert_eq!(parser.take('1').unwrap().str(), "1")
     /// ```
     pub fn take(&mut self, mut searcher: impl Searcher) -> Option<Self> {
         if searcher.matches_start(self.str()) {
@@ -61,10 +61,10 @@ impl<'c> Parsey<'c> {
     /// Take until the searcher matches.
     ///
     /// ```rust
-    /// use parsey::Parsey;
+    /// use starryparse::Parser;
     ///
-    /// let mut parsey = Parsey::new("123456");
-    /// assert_eq!(parsey.take_until('3').unwrap().str(), "12")
+    /// let mut parser = Parser::new("123456");
+    /// assert_eq!(parser.take_until('3').unwrap().str(), "12")
     /// ```
     pub fn take_until(&mut self, mut searcher: impl Searcher) -> Option<Self> {
         for (i, _) in self.str().char_indices() {
@@ -78,10 +78,10 @@ impl<'c> Parsey<'c> {
     /// Take until the searcher matches with the matched part included.
     ///
     /// ```rust
-    /// use parsey::Parsey;
+    /// use starryparse::Parser;
     ///
-    /// let mut parsey = Parsey::new("123456");
-    /// assert_eq!(parsey.take_until_inclusive('3').unwrap().str(), "123")
+    /// let mut parser = Parser::new("123456");
+    /// assert_eq!(parser.take_until_inclusive('3').unwrap().str(), "123")
     /// ```
     pub fn take_until_inclusive(&mut self, mut searcher: impl Searcher) -> Option<Self> {
         for (i, _) in self.str().char_indices() {
@@ -137,7 +137,7 @@ impl<'c> Parsey<'c> {
     ///function has done. (Forwards inner error)
     pub fn sandbox_result<O, E>(
         &mut self,
-        f: impl FnOnce(&mut Parsey<'c>) -> Result<Option<O>, E>,
+        f: impl FnOnce(&mut Parser<'c>) -> Result<Option<O>, E>,
     ) -> Result<Option<O>, E> {
         let mut duplicated = self.fork();
         let result = f(&mut duplicated)?;
@@ -150,7 +150,7 @@ impl<'c> Parsey<'c> {
     }
     ///Tries a function. If it returns Some apply the result to self else throw away all work the
     ///function has done.
-    pub fn sandbox<O>(&mut self, f: impl FnOnce(&mut Parsey<'c>) -> Option<O>) -> Option<O> {
+    pub fn sandbox<O>(&mut self, f: impl FnOnce(&mut Parser<'c>) -> Option<O>) -> Option<O> {
         self.sandbox_result::<O, Infallible>(|p| Ok(f(p))).unwrap()
     }
 
@@ -161,7 +161,7 @@ impl<'c> Parsey<'c> {
 }
 
 // shorthand's
-impl<'c> Parsey<'c> {
+impl<'c> Parser<'c> {
     /// Same as [`Self::take_until`] but instead of returning `None` it takes the entire input string.
     pub fn take_until_or_end(&mut self, searcher: impl Searcher) -> Self {
         match self.take_until(searcher) {
@@ -185,21 +185,21 @@ impl<'c> Parsey<'c> {
 
 #[cfg(test)]
 mod test {
-    use crate::Parsey;
+    use crate::Parser;
 
     #[test]
     fn split() {
-        let mut ci = Parsey::new("abcd");
+        let mut ci = Parser::new("abcd");
         assert_eq!(
             ci.take_n(1),
-            Parsey {
+            Parser {
                 code: "abcd",
                 span: (0..1).into()
             }
         );
         assert_eq!(
             ci,
-            Parsey {
+            Parser {
                 code: "abcd",
                 span: (1..4).into()
             }
@@ -207,14 +207,14 @@ mod test {
 
         assert_eq!(
             ci.take_n(1),
-            Parsey {
+            Parser {
                 code: "abcd",
                 span: (1..2).into()
             }
         );
         assert_eq!(
             ci,
-            Parsey {
+            Parser {
                 code: "abcd",
                 span: (2..4).into()
             }
@@ -223,34 +223,34 @@ mod test {
 
     #[test]
     fn take() {
-        let mut parser = Parsey::new("**lala");
+        let mut parser = Parser::new("**lala");
         assert_eq!(parser.take("**").map(|v| v.str()), Some("**"));
         assert_eq!(parser.str(), "lala");
     }
 
     #[test]
     fn take_until() {
-        let mut ci = Parsey::new("abcd");
+        let mut ci = Parser::new("abcd");
         assert_eq!(ci.take_until(|c| c == 'c').map(|p| p.str()), Some("ab"));
 
         assert_eq!(ci.str(), "cd");
 
         assert_eq!(
             ci,
-            Parsey {
+            Parser {
                 code: "abcd",
                 span: (2..4).into(),
             }
         );
 
-        let mut ci = Parsey::new("abcd");
+        let mut ci = Parser::new("abcd");
         assert_eq!(ci.take_until('c').map(|p| p.str()), Some("ab"));
 
         assert_eq!(ci.str(), "cd");
 
         assert_eq!(
             ci,
-            Parsey {
+            Parser {
                 code: "abcd",
                 span: (2..4).into(),
             }
@@ -259,14 +259,14 @@ mod test {
 
     #[test]
     fn take_until_inclusive() {
-        let mut ci = Parsey::new("abcd");
+        let mut ci = Parser::new("abcd");
         assert_eq!(
             ci.take_until_inclusive(|c| c == 'c').map(|p| p.str()),
             Some("abc")
         );
         assert_eq!(ci.str(), "d");
 
-        let mut ci = Parsey::new("abĉd");
+        let mut ci = Parser::new("abĉd");
         assert_eq!(
             ci.take_until_inclusive(|c| c == 'ĉ').map(|p| p.str()),
             Some("abĉ")
@@ -276,14 +276,14 @@ mod test {
 
     #[test]
     fn take_until_tag() {
-        let mut ci = Parsey::new("words abcd");
+        let mut ci = Parser::new("words abcd");
         assert_eq!(ci.take_until(" abc").map(|p| p.str()), Some("words"));
         assert_eq!(ci.str(), " abcd");
     }
 
     #[test]
     fn take_until_tag_inclusive() {
-        let mut ci = Parsey::new("words abcd");
+        let mut ci = Parser::new("words abcd");
         assert_eq!(
             ci.take_until_inclusive(" abc").map(|p| p.str()),
             Some("words abc")
@@ -293,22 +293,22 @@ mod test {
 
     #[test]
     fn take_until_special_chars() {
-        let mut ci = Parsey::new("éabcd");
+        let mut ci = Parser::new("éabcd");
         assert_eq!(ci.take_until(|c| c == 'c').map(|p| p.str()), Some("éab"));
 
         assert_eq!(ci.str(), "cd");
 
-        let mut ci = Parsey::new("abcédf");
+        let mut ci = Parser::new("abcédf");
         assert_eq!(ci.take_until(|c| c == 'é').map(|p| p.str()), Some("abc"));
 
         assert_eq!(ci.str(), "édf");
 
-        let mut ci = Parsey::new("abcédf");
+        let mut ci = Parser::new("abcédf");
         assert_eq!(ci.take_until('é').map(|p| p.str()), Some("abc"));
 
         assert_eq!(ci.str(), "édf");
 
-        let mut ci = Parsey::new("abcéchïcken_df");
+        let mut ci = Parser::new("abcéchïcken_df");
         assert_eq!(ci.take_until("chïcken").map(|p| p.str()), Some("abcé"));
 
         assert_eq!(ci.str(), "chïcken_df");
@@ -316,7 +316,7 @@ mod test {
 
     #[test]
     fn take_until_without() {
-        let mut ci = Parsey::new("abcd");
+        let mut ci = Parser::new("abcd");
         assert_eq!(
             ci.take_until_without(|c| c == 'c', |_| false)
                 .map(|p| p.str()),
@@ -327,13 +327,13 @@ mod test {
 
         assert_eq!(
             ci,
-            Parsey {
+            Parser {
                 code: "abcd",
                 span: (2..4).into(),
             }
         );
 
-        let mut ci = Parsey::new("hello world");
+        let mut ci = Parser::new("hello world");
         assert_eq!(
             ci.take_until_without("world", '\n').map(|p| p.str()),
             Some("hello ")
@@ -341,7 +341,7 @@ mod test {
 
         assert_eq!(ci.str(), "world");
 
-        let mut ci = Parsey::new("hello\nworld");
+        let mut ci = Parser::new("hello\nworld");
         assert_eq!(ci.take_until_without("world", '\n').map(|p| p.str()), None);
 
         assert_eq!(ci.str(), "hello\nworld");
@@ -349,7 +349,7 @@ mod test {
 
     #[test]
     fn take_until_without_abort() {
-        let mut ci = Parsey::new("abwcd");
+        let mut ci = Parser::new("abwcd");
         assert_eq!(
             ci.take_until_without(|c| c == 'c', 'w').map(|p| p.str()),
             None
@@ -358,10 +358,10 @@ mod test {
 
     #[test]
     fn take_until_newline() {
-        let mut ci = Parsey::new("abcd\n");
+        let mut ci = Parser::new("abcd\n");
         assert_eq!(
             ci.take_until_or_end('\n'),
-            Parsey {
+            Parser {
                 code: "abcd\n",
                 span: (0..4).into()
             }
@@ -369,7 +369,7 @@ mod test {
 
         assert_eq!(
             ci,
-            Parsey {
+            Parser {
                 code: "abcd\n",
                 span: (4..5).into(),
             }
@@ -380,18 +380,18 @@ mod test {
 
     #[test]
     fn skip_whitespace() {
-        let mut ci = Parsey::new(" \nabcd");
+        let mut ci = Parser::new(" \nabcd");
         ci.take_until_or_end(|c: char| !c.is_whitespace());
         assert_eq!(ci.str(), "abcd");
 
-        let mut ci = Parsey::new("\n\n");
+        let mut ci = Parser::new("\n\n");
         ci.take_until_or_end(|c: char| !c.is_whitespace());
         assert_eq!(ci.str(), "");
     }
 
     #[test]
     fn end() {
-        let mut ci = Parsey::new("a\nb\nc\n");
+        let mut ci = Parser::new("a\nb\nc\n");
         ci.take_until_or_end(|c| c == '\n');
         ci.take_n(1);
         ci.take_until_or_end(|c| c == '\n');

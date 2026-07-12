@@ -1,4 +1,4 @@
-# Parsey
+# starryparse
 
 A light weight zero copy parsing library for rust focused on text parsing and span recovery.
 
@@ -13,14 +13,14 @@ A light weight zero copy parsing library for rust focused on text parsing and sp
 ## Example
 
 ```rust
-use parsey::{Parsey, Spanned, ParseResult};
+use starryparse::{starryparse, Spanned, ParseResult};
 
 #[derive(Debug, PartialEq)]
 enum Err {
     StringHasNoEnd,
 }
 
-fn parse_string<'c>(parser: &mut Parsey<'c>) -> ParseResult<String, Spanned<Err>> {
+fn parse_string<'c>(parser: &mut Parser<'c>) -> ParseResult<String, Spanned<Err>> {
     if let None = parser.take('"') {
         return Ok(None); // If the first char is not a " we don't consider this a string
     }
@@ -36,7 +36,7 @@ fn parse_string<'c>(parser: &mut Parsey<'c>) -> ParseResult<String, Spanned<Err>
 }
 
 assert_eq!(
-    parse_string(&mut Parsey::new("\"my string\""))
+    parse_string(&mut Parser::new("\"my string\""))
         .unwrap()
         .unwrap(),
     "my string".to_string()
@@ -45,7 +45,7 @@ assert_eq!(
 
 See examples dir for more examples.
 
-For parsey in action look at [config_parser](https://github.com/Xgames123/config_parser)
+For starryparse in action look at [config_parser](https://github.com/Xgames123/config_parser)
 
 ## Licence
 
