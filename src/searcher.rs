@@ -5,14 +5,14 @@
 /// - FnMut(char) -> bool,
 pub trait Searcher {
     /// The length which should be skipped when consuming this searcher.
-    /// The length will be ceiled to to first char boundery
+    ///
+    /// NOTE: The length will be ceiled to to first char boundery
     fn len(&self) -> usize {
         1
     }
 
     /// Returns true if this searcher matches at the start of the string.
-    /// The amount of which is considered should in most cases be the same as the len returned by
-    /// the Searcher::len function
+    /// The amount of which is considered should in most cases be the same as the value returned by [`Self::len`]
     fn matches_start(&mut self, str: &str) -> bool;
 }
 
