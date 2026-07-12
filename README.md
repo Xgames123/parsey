@@ -1,10 +1,47 @@
 # Parsey
 
-A light weight parsing library for rust focused string parsing and span recovery.
+A light weight zero copy parsing library for rust focused string parsing and span recovery.
 For parsey in action look at [config_parser](https://github.com/Xgames123/config_parser)
 
 ## Features
 
 - `miette`: When enabled allows the [`crate::Span`] type to be converted to a `miette::SourceSpan`
 
-## Examples
+## Roadmap
+
+- [ ] Improve documentation and examples
+
+## Example
+
+```rust
+use parsey::{Parsey, Spanned, ParseResult};
+
+#[derive(Debug, PartialEq)]
+enum Err {
+    StringHasNoEnd,
+}
+
+fn parse_string<'c>(parser: &mut Parsey<'c>) -> ParseResult<String, Spanned<Err>> {
+    if let None = parser.take('"') {
+        return Ok(None); // If the first char is not a " we don't consider this a string
+    }
+
+    // In this case we pass the entire span for the error.
+    // You can do more processing to guess what the user meant for better span and error
+    // quality.
+    let string = parser
+        .take_until('"')
+        .ok_or(Spanned::new(Err::StringHasNoEnd, parser.span()))?;
+
+    Ok(Some(string.str().into()))
+}
+
+assert_eq!(
+    parse_string(&mut Parsey::new("\"my string\""))
+        .unwrap()
+        .unwrap(),
+    "my string".to_string()
+);
+```
+
+See examples dir for more examples.

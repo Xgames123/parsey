@@ -10,7 +10,6 @@
 /// enum Token {Number, String}
 /// fn parse_number<'c>(parser: &mut Parsey<'c>) -> ParseResult<Token, ()> {
 ///     let num = parser.take_until_or_end(|c: char|!c.is_digit(10));
-///         dbg!(num.str());
 ///     if num.str().len() > 0 {
 ///         Ok(Some(Token::Number))
 ///     } else {
@@ -20,7 +19,6 @@
 ///
 ///fn parse_string<'c>(parser: &mut Parsey<'c>) -> ParseResult<Token, ()> {
 ///     let stri = parser.take_until_or_end(|c: char|!c.is_alphabetic());
-///         dbg!(stri.str());
 ///     if stri.str().len() > 0 {
 ///         Ok(Some(Token::String))
 ///     } else {

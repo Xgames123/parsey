@@ -1,6 +1,7 @@
 /// A trait that represent a type that can be used to search a string for a match.
 /// This trait is implemented for types like:
 /// - char
+/// - [char]
 /// - str
 /// - FnMut(char) -> bool,
 pub trait Searcher {
@@ -36,5 +37,14 @@ impl<'a> Searcher for &'a str {
 impl Searcher for char {
     fn matches_start(&mut self, str: &str) -> bool {
         str.chars().next() == Some(*self)
+    }
+}
+
+impl<const N: usize> Searcher for [char; N] {
+    fn matches_start(&mut self, str: &str) -> bool {
+        let Some(char) = str.chars().next() else {
+            return false;
+        };
+        self.contains(&char)
     }
 }
