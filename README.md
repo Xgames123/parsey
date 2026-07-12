@@ -1,7 +1,6 @@
 # Parsey
 
-A light weight zero copy parsing library for rust focused string parsing and span recovery.
-For parsey in action look at [config_parser](https://github.com/Xgames123/config_parser)
+A light weight zero copy parsing library for rust focused on text parsing and span recovery.
 
 ## Features
 
@@ -45,3 +44,21 @@ assert_eq!(
 ```
 
 See examples dir for more examples.
+
+For parsey in action look at [config_parser](https://github.com/Xgames123/config_parser)
+
+## Licence
+
+Copyright 2026 S.v.e.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.

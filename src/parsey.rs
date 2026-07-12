@@ -3,13 +3,14 @@ use std::convert::Infallible;
 use crate::{Searcher, Span};
 
 /// Allows you to consumes a str in steps using basic operations. like take_n take_until
+/// 'c is the lifetime of the string slice this parser operates on.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Parsey<'a> {
-    code: &'a str,
+pub struct Parsey<'c> {
+    code: &'c str,
     span: Span,
 }
-impl<'a> Parsey<'a> {
-    pub fn new(code: &'a str) -> Self {
+impl<'c> Parsey<'c> {
+    pub fn new(code: &'c str) -> Self {
         Self {
             code,
             span: Span::from_str(code),
@@ -17,7 +18,7 @@ impl<'a> Parsey<'a> {
     }
 
     /// Returns the string slice this parser can see.
-    pub fn str(&self) -> &'a str {
+    pub fn str(&self) -> &'c str {
         &self.code[self.span.start()..self.span.end()]
     }
     /// Returns the span of the string slice this parses can see.
@@ -136,7 +137,7 @@ impl<'a> Parsey<'a> {
     ///function has done. (Forwards inner error)
     pub fn sandbox_result<O, E>(
         &mut self,
-        f: impl FnOnce(&mut Parsey<'a>) -> Result<Option<O>, E>,
+        f: impl FnOnce(&mut Parsey<'c>) -> Result<Option<O>, E>,
     ) -> Result<Option<O>, E> {
         let mut duplicated = self.fork();
         let result = f(&mut duplicated)?;
@@ -149,7 +150,7 @@ impl<'a> Parsey<'a> {
     }
     ///Tries a function. If it returns Some apply the result to self else throw away all work the
     ///function has done.
-    pub fn sandbox<O>(&mut self, f: impl FnOnce(&mut Parsey<'a>) -> Option<O>) -> Option<O> {
+    pub fn sandbox<O>(&mut self, f: impl FnOnce(&mut Parsey<'c>) -> Option<O>) -> Option<O> {
         self.sandbox_result::<O, Infallible>(|p| Ok(f(p))).unwrap()
     }
 
@@ -160,7 +161,7 @@ impl<'a> Parsey<'a> {
 }
 
 // shorthand's
-impl<'a> Parsey<'a> {
+impl<'c> Parsey<'c> {
     /// Same as [`Self::take_until`] but instead of returning `None` it takes the entire input string.
     pub fn take_until_or_end(&mut self, searcher: impl Searcher) -> Self {
         match self.take_until(searcher) {

@@ -3,8 +3,11 @@ name = "parsey"
 version = "1.0.0"
 authors=["ldev <ldev@ldev.eu.org>"]
 edition="2024"
-description="A light weight zero copy parsing library for rust focused string parsing and span recovery."
+description="A light weight zero copy parsing library for rust focused on text parsing and span recovery."
 repository="https://github.com/Xgames123/parsey"
+keywords=["parse", "zero copy", "text", "span"]
+categories=["parsing"]
+licence="Apache-2.0"
 
 [dependencies]
 miette={ version="7.6.0", optional=true }
