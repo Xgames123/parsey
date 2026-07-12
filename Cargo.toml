@@ -1,6 +1,6 @@
 [package]
 name = "starryparse"
-version = "1.0.0"
+version = "1.0.1"
 authors=["Sibe <sibe at starssystems dot org>"]
 edition="2024"
 description="A light weight zero copy parsing library for rust focused on text parsing and span recovery."

@@ -37,7 +37,7 @@ macro_rules! parse_any {
             let result$(: $type)? = if false {
                 unreachable!();
             }
-            $( else if let result = $parser($parser) && let Ok(Some(_)) | Err(_) = result {
+            $( else if let result = $parse_func($parser) && let Ok(Some(_)) | Err(_) = result {
                 result.map_err(|e|e.into()).map(|v|v.map(|v|v.into()))
             } )*
             else {
