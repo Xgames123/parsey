@@ -2,7 +2,7 @@ use std::convert::Infallible;
 
 use crate::{Searcher, Span};
 
-/// A Parser that consumes a str and can do operations on it.
+/// Allows you to consumes a str in steps using basic operations. like take_n take_until
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Parsey<'a> {
     code: &'a str,
@@ -41,7 +41,7 @@ impl<'a> Parsey<'a> {
         }
     }
 
-    /// Takes one time the matched [`Searcher`] and returns it or None if the searcher didn't match.
+    /// If the provided searcher matches [`Searcher`] take it one time else return `None`.
     ///
     /// ```rust
     /// use parsey::Parsey;
@@ -127,6 +127,7 @@ impl<'a> Parsey<'a> {
         None
     }
 
+    /// This creates a copy of the parser with the same input string. (same as cloning the parser).
     pub fn fork(&self) -> Self {
         self.clone()
     }
@@ -152,6 +153,7 @@ impl<'a> Parsey<'a> {
         self.sandbox_result::<O, Infallible>(|p| Ok(f(p))).unwrap()
     }
 
+    /// Has this parser reached the end of the input string
     pub fn end(&self) -> bool {
         self.str().len() == 0
     }
@@ -159,6 +161,7 @@ impl<'a> Parsey<'a> {
 
 // shorthand's
 impl<'a> Parsey<'a> {
+    /// Same as [`Self::take_until`] but instead of returning `None` it takes the entire input string.
     pub fn take_until_or_end(&mut self, searcher: impl Searcher) -> Self {
         match self.take_until(searcher) {
             Some(v) => v,
@@ -166,6 +169,7 @@ impl<'a> Parsey<'a> {
         }
     }
 
+    /// Same as [`Self::take_until_without`] but instead of returning `None` it takes the entire input string.
     pub fn take_until_without_or_end(
         &mut self,
         until: impl Searcher,

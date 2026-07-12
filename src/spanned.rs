@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use crate::Span;
 
-/// Wraps a type with a [`Span`]
+/// Wraps a type and associates a [`Span`] with it
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Spanned<T> {
     pub span: Span,
